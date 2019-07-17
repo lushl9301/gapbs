@@ -1,7 +1,13 @@
 cmake_minimum_required(VERSION 3.12)
-project(sparsify)
+project(bfs)
 
 set(CMAKE_CXX_STANDARD 14)
+find_package(OpenMP)
+if (OPENMP_FOUND)
+    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+    set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
+endif()
 
 include_directories(src)
 add_executable(converter
@@ -19,7 +25,7 @@ add_executable(converter
                src/timer.h
                src/util.h
                src/writer.h)
-add_executable(sparsify
+add_executable(bfs
                src/benchmark.h
                src/bitmap.h
                src/builder.h
@@ -30,7 +36,7 @@ add_executable(sparsify
                src/pvector.h
                src/reader.h
                src/sliding_queue.h
-               src/sssp.cc
+               src/bfs.cc
                src/timer.h
                src/util.h
                src/writer.h)

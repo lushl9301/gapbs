@@ -13,7 +13,6 @@
 #include "pvector.h"
 #include "util.h"
 
-
 /*
 GAP Benchmark Suite
 Class:  Reader
@@ -28,8 +27,8 @@ Given filename, returns an edgelist or the entire graph (if serialized)
 */
 
 
-template <typename NodeID_, typename DestID_ = NodeID_,
-          typename WeightT_ = NodeID_, bool invert = true>
+template<typename NodeID_, typename DestID_ = NodeID_,
+    typename WeightT_ = NodeID_, bool invert = true>
 class Reader {
   typedef EdgePair<NodeID_, DestID_> Edge;
   typedef pvector<Edge> EdgeList;
@@ -76,7 +75,7 @@ class Reader {
       c = in.peek();
       if (c == 'a') {
         in >> c >> u >> v;
-        el.push_back(Edge(u - 1, NodeWeight<NodeID_, WeightT_>(v.v-1, v.w)));
+        el.push_back(Edge(u - 1, NodeWeight<NodeID_, WeightT_>(v.v - 1, v.w)));
       } else {
         in.ignore(200, '\n');
       }
@@ -164,7 +163,7 @@ class Reader {
     if (field == "pattern") {
       read_weights = false;
     } else if ((field == "real") || (field == "double") ||
-               (field == "integer")) {
+        (field == "integer")) {
       read_weights = true;
     } else {
       std::cout << "unrecognized field type for .mtx" << std::endl;
@@ -227,7 +226,7 @@ class Reader {
       std::cout << "Couldn't open file " << filename_ << std::endl;
       std::exit(-2);
     }
-    if (suffix == ".el") {
+    if (suffix == ".el" || suffix == ".txt") {
       el = ReadInEL(file);
     } else if (suffix == ".wel") {
       needs_weights = false;
@@ -278,20 +277,20 @@ class Reader {
     SGOffset num_nodes, num_edges;
     DestID_ **index = nullptr, **inv_index = nullptr;
     DestID_ *neighs = nullptr, *inv_neighs = nullptr;
-    file.read(reinterpret_cast<char*>(&directed), sizeof(bool));
-    file.read(reinterpret_cast<char*>(&num_edges), sizeof(SGOffset));
-    file.read(reinterpret_cast<char*>(&num_nodes), sizeof(SGOffset));
-    pvector<SGOffset> offsets(num_nodes+1);
+    file.read(reinterpret_cast<char *>(&directed), sizeof(bool));
+    file.read(reinterpret_cast<char *>(&num_edges), sizeof(SGOffset));
+    file.read(reinterpret_cast<char *>(&num_nodes), sizeof(SGOffset));
+    pvector<SGOffset> offsets(num_nodes + 1);
     neighs = new DestID_[num_edges];
-    std::streamsize num_index_bytes = (num_nodes+1) * sizeof(SGOffset);
+    std::streamsize num_index_bytes = (num_nodes + 1) * sizeof(SGOffset);
     std::streamsize num_neigh_bytes = num_edges * sizeof(DestID_);
-    file.read(reinterpret_cast<char*>(offsets.data()), num_index_bytes);
-    file.read(reinterpret_cast<char*>(neighs), num_neigh_bytes);
+    file.read(reinterpret_cast<char *>(offsets.data()), num_index_bytes);
+    file.read(reinterpret_cast<char *>(neighs), num_neigh_bytes);
     index = CSRGraph<NodeID_, DestID_>::GenIndex(offsets, neighs);
     if (directed && invert) {
       inv_neighs = new DestID_[num_edges];
-      file.read(reinterpret_cast<char*>(offsets.data()), num_index_bytes);
-      file.read(reinterpret_cast<char*>(inv_neighs), num_neigh_bytes);
+      file.read(reinterpret_cast<char *>(offsets.data()), num_index_bytes);
+      file.read(reinterpret_cast<char *>(inv_neighs), num_neigh_bytes);
       inv_index = CSRGraph<NodeID_, DestID_>::GenIndex(offsets, inv_neighs);
     }
     file.close();

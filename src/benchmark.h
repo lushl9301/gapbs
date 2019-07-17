@@ -49,10 +49,18 @@ class SourcePicker {
   explicit SourcePicker(const GraphT_ &g, NodeID given_source = -1)
       : given_source(given_source), rng(kRandSeed), udist(0, g.num_nodes()-1),
         g_(g) {}
+  explicit SourcePicker(const GraphT_ &g, std::vector<NodeID> &given_source_l)
+      : given_source_list(given_source_l), rng(kRandSeed), udist(0, g.num_nodes()-1), given_source(-1),
+        g_(g) {}
 
   NodeID PickNext() {
     if (given_source != -1)
       return given_source;
+    if (!given_source_list.empty()) {
+      NodeID source = given_source_list.back();
+      given_source_list.pop_back();
+      return source;
+    }
     NodeID source;
     do {
       source = udist(rng);
@@ -62,6 +70,7 @@ class SourcePicker {
 
  private:
   NodeID given_source;
+  std::vector<NodeID> given_source_list;
   std::mt19937 rng;
   std::uniform_int_distribution<NodeID> udist;
   const GraphT_ &g_;
@@ -107,7 +116,7 @@ void BenchmarkKernel(const CLApp &cli, const GraphT_ &g,
     trial_timer.Start();
     auto result = kernel(g);
     trial_timer.Stop();
-    PrintTime("Trial Time", trial_timer.Seconds());
+//    PrintTime("Trial Time", trial_timer.Seconds());
     total_seconds += trial_timer.Seconds();
     if (cli.do_analysis() && (iter == (cli.num_trials()-1)))
       stats(g, result);

@@ -30,12 +30,13 @@ class CLBase {
   int argc_;
   char** argv_;
   std::string name_;
-  std::string get_args_ = "f:g:hk:su:";
+  std::string get_args_ = "f:y:g:hk:su:";
   std::vector<std::string> help_strings_;
 
   int scale_ = -1;
   int degree_ = 16;
   std::string filename_ = "";
+  std::string src_file_name_ = "";
   bool symmetrize_ = false;
   bool uniform_ = false;
 
@@ -57,6 +58,7 @@ class CLBase {
          argc_(argc), argv_(argv), name_(name) {
     AddHelpLine('h', "", "print this help message");
     AddHelpLine('f', "file", "load graph from file");
+    AddHelpLine('y', "file", "load source from file");
     AddHelpLine('s', "", "symmetrize input edge list", "false");
     AddHelpLine('g', "scale", "generate 2^scale kronecker graph");
     AddHelpLine('u', "scale", "generate 2^scale uniform-random graph");
@@ -82,6 +84,7 @@ class CLBase {
   void virtual HandleArg(signed char opt, char* opt_arg) {
     switch (opt) {
       case 'f': filename_ = std::string(opt_arg);           break;
+      case 'y': src_file_name_ = std::string(opt_arg);      break;
       case 'g': scale_ = atoi(opt_arg);                     break;
       case 'h': PrintUsage();                               break;
       case 'k': degree_ = atoi(opt_arg);                    break;
@@ -101,6 +104,7 @@ class CLBase {
   int scale() const { return scale_; }
   int degree() const { return degree_; }
   std::string filename() const { return filename_; }
+  std::string src_filename() const { return src_file_name_; }
   bool symmetrize() const { return symmetrize_; }
   bool uniform() const { return uniform_; }
 };

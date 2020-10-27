@@ -25,7 +25,7 @@ add_executable(converter
                src/timer.h
                src/util.h
                src/writer.h)
-add_executable(bfs
+add_executable(sssp
                src/benchmark.h
                src/bitmap.h
                src/builder.h
@@ -36,7 +36,7 @@ add_executable(bfs
                src/pvector.h
                src/reader.h
                src/sliding_queue.h
-               src/bfs.cc
+               src/sssp.cc
                src/timer.h
                src/util.h
                src/writer.h)

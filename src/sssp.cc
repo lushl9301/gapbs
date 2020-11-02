@@ -1,3 +1,5 @@
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "openmp-use-default-none"
 // Copyright (c) 2015, The Regents of the University of California (Regents)
 // See LICENSE.txt for license details
 
@@ -67,12 +69,13 @@ const size_t kBinSizeThreshold = 1000;
 
 inline
 void RelaxEdges(const WGraph &g, NodeID u, WeightT delta,
-                pvector<WeightT> &dist, vector <vector<NodeID>> &local_bins) {
+                pvector<WeightT> &dist, pvector<WNode> &father, vector <vector<NodeID>> &local_bins) {
   for (WNode wn : g.out_neigh(u)) {
     WeightT old_dist = dist[wn.v];
     WeightT new_dist = dist[u] + wn.w;
     while (new_dist < old_dist) {
       if (compare_and_swap(dist[wn.v], old_dist, new_dist)) {
+        father[wn.v] = {u, wn.w};
         size_t dest_bin = new_dist/delta;
         if (dest_bin >= local_bins.size())
           local_bins.resize(dest_bin+1);
@@ -87,7 +90,9 @@ void RelaxEdges(const WGraph &g, NodeID u, WeightT delta,
 pvector<WeightT> DeltaStep(const WGraph &g, NodeID source, WeightT delta) {
   Timer t;
   pvector<WeightT> dist(g.num_nodes(), kDistInf);
+  pvector<WNode> father(g.num_nodes(), -1);
   dist[source] = 0;
+  father[source] = source;
   pvector<NodeID> frontier(g.num_edges_directed());
   // two element arrays for double buffering curr=iter&1, next=(iter+1)&1
   size_t shared_indexes[2] = {0, kMaxBin};
@@ -107,7 +112,7 @@ pvector<WeightT> DeltaStep(const WGraph &g, NodeID source, WeightT delta) {
       for (size_t i=0; i < curr_frontier_tail; i++) {
         NodeID u = frontier[i];
         if (dist[u] >= delta * static_cast<WeightT>(curr_bin_index))
-          RelaxEdges(g, u, delta, dist, local_bins);
+          RelaxEdges(g, u, delta, dist, father, local_bins);
       }
       while (curr_bin_index < local_bins.size() &&
              !local_bins[curr_bin_index].empty() &&
@@ -115,7 +120,7 @@ pvector<WeightT> DeltaStep(const WGraph &g, NodeID source, WeightT delta) {
         vector<NodeID> curr_bin_copy = local_bins[curr_bin_index];
         local_bins[curr_bin_index].resize(0);
         for (NodeID u : curr_bin_copy)
-          RelaxEdges(g, u, delta, dist, local_bins);
+          RelaxEdges(g, u, delta, dist, father, local_bins);
       }
       for (size_t i=curr_bin_index; i < local_bins.size(); i++) {
         if (!local_bins[i].empty()) {
@@ -146,6 +151,55 @@ pvector<WeightT> DeltaStep(const WGraph &g, NodeID source, WeightT delta) {
     #pragma omp single
     cout << "took " << iter << " iterations" << endl;
   }
+  double counts[100];
+  for (int i = 0; i < 100; i++) counts[i] = 0;
+  int lastlast = 0;
+  int nonlast = 0;
+  int sssp_non_last = 0;
+  int sssp_last_last = 0;
+
+  for (NodeID v : g.vertices()) {
+    if (father[v] == -1) {
+      continue;
+    }
+    if (v > 5000000) {
+      break;
+    }
+    //std::vector<NodeID> order;
+    bool last_flag = false;
+    while (v != source) {
+      auto u = father[v].v;
+      int count = 0;
+      for (WNode wn : g.out_neigh(u)) {
+        if (wn.w < father[v].w) {
+          count++;
+        }
+      }
+      if (count >= g.out_degree(u) - 5) {
+        lastlast++;
+        last_flag = true;
+      } else {
+        nonlast++; 
+      }
+      v = u;
+//      std::cout << v << " ";
+//      std::cout << count;
+      //order.push_back(count);
+      if (count > 99) {
+        continue;
+      }
+      counts[count]++;
+    }
+    if (last_flag) {
+      sssp_last_last++;
+    } else {
+      sssp_non_last++;
+    }
+//    std::cout << endl;
+  }
+  std::cout << sssp_last_last << " " << sssp_non_last << std::endl;
+  std::cout << lastlast << " " << nonlast << std::endl;
+  for (int i = 0; i < 20; i++) std::cout << counts[i] << std::endl;
   return dist;
 }
 
@@ -208,3 +262,5 @@ int main(int argc, char* argv[]) {
   BenchmarkKernel(cli, g, SSSPBound, PrintSSSPStats, VerifierBound);
   return 0;
 }
+
+#pragma clang diagnostic pop
